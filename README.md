@@ -76,6 +76,9 @@ npm run dev
 
 Open http://localhost:5173.
 
+> **Windows PowerShell:** if `npm` fails with "running scripts is disabled on this system",
+> use `npm.cmd run dev` instead (or run the commands from Command Prompt).
+
 To use MySQL instead of SQLite, create a `splitkaro` database and set `DATABASE_URL` in `.env`
 (see `.env.example`).
 
