@@ -16,7 +16,7 @@ Log who paid for what, and SplitKaro works out a **short list of payments** that
 - **Settle up**: a greedy algorithm that settles a group of *n* people in at most *n − 1* payments
 - **Money handled in paisa (integers)** to avoid floating-point rounding errors
 - **Automated tests** (pytest) running on every push via **GitHub Actions**
-- **Dockerized**: the whole stack (MySQL + API + frontend) starts with one command, and CI
+- **Dockerized**: the whole stack (PostgreSQL + API + frontend) starts with one command, and CI
   builds the images and smoke-tests the running stack on every push
 
 ## Tech stack
@@ -25,10 +25,10 @@ Log who paid for what, and SplitKaro works out a **short list of payments** that
 |---|---|
 | Frontend | React 19, React Router, Vite, Tailwind CSS |
 | API | Python 3.13, FastAPI, Pydantic |
-| Database | SQLAlchemy 2.0 ORM, MySQL (SQLite for local dev and tests) |
+| Database | SQLAlchemy 2.0 ORM: PostgreSQL in production and Docker, MySQL also supported, SQLite for tests |
 | Auth | OAuth2 password flow, JWT (PyJWT), bcrypt |
 | Testing / CI | pytest, FastAPI TestClient, GitHub Actions |
-| DevOps | Docker (multi-stage builds), Docker Compose, nginx |
+| DevOps | Docker (multi-stage builds), Docker Compose, nginx, Render (Blueprint), Neon |
 
 ## API endpoints
 
@@ -97,8 +97,18 @@ Open http://localhost:5173.
 > **Windows PowerShell:** if `npm` fails with "running scripts is disabled on this system",
 > use `npm.cmd run dev` instead (or run the commands from Command Prompt).
 
-To use MySQL instead of SQLite, create a `splitkaro` database and set `DATABASE_URL` in `.env`
-(see `.env.example`).
+To use MySQL or PostgreSQL instead of SQLite, create a `splitkaro` database and set `DATABASE_URL`
+in `.env` (see `.env.example`).
+
+## Deployment
+
+The live demo runs on free tiers:
+
+- **Render** runs the API (from the `Dockerfile`) and serves the built frontend. Both services
+  are described in [`render.yaml`](render.yaml) (a Render Blueprint).
+- **Neon** hosts the PostgreSQL database.
+
+Free Render services sleep when idle, so the first request after a while can take up to a minute.
 
 ## Run tests
 
@@ -129,14 +139,15 @@ frontend/
   Dockerfile           # builds the app, then serves it with nginx
 .github/workflows/     # CI pipeline: tests + Docker smoke test
 Dockerfile             # backend image
-compose.yaml           # MySQL + API + frontend together
+compose.yaml           # PostgreSQL + API + frontend together
+render.yaml            # deployment config for Render
 ```
 
 ## Roadmap
 
 - [x] React frontend
 - [x] Docker + Docker Compose (MySQL + API + frontend)
-- [ ] Deploy to the cloud
+- [x] Deploy to the cloud (Render + Neon)
 - [ ] Database migrations with Alembic
 - [ ] Unequal splits (by amount or percentage)
 

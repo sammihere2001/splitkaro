@@ -2,24 +2,22 @@
 #   Frontend: http://localhost:8080
 #   API docs: http://localhost:8000/docs
 #
-# The passwords below are development defaults. Override them in a .env file for anything real.
+# The password below is a development default. Override it in a .env file for anything real.
 
 services:
   db:
-    image: mysql:8.4
+    # PostgreSQL, the same database the live deployment uses (dev/prod parity).
+    image: postgres:17-alpine
     environment:
-      MYSQL_DATABASE: splitkaro
-      MYSQL_USER: splitkaro
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-splitkaro-dev-password}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root-dev-password}
+      POSTGRES_DB: splitkaro
+      POSTGRES_USER: splitkaro
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-splitkaro-dev-password}
     volumes:
       # Keeps the data when containers are recreated. `docker compose down -v` deletes it.
-      - db-data:/var/lib/mysql
-    # No "ports:" on purpose: only the api container needs to reach MySQL, and this way it
-    # doesn't clash with a MySQL already installed on your computer (port 3306).
+      - pg-data:/var/lib/postgresql/data
+    # No "ports:" on purpose: only the api container needs to reach the database.
     healthcheck:
-      # 127.0.0.1 forces a network connection, which only works once MySQL has fully started.
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      test: ["CMD-SHELL", "pg_isready -U splitkaro -d splitkaro"]
       interval: 5s
       timeout: 5s
       retries: 30
@@ -28,14 +26,14 @@ services:
     build: .
     environment:
       # "db" is the service name above: containers find each other by name.
-      DATABASE_URL: mysql+pymysql://splitkaro:${MYSQL_PASSWORD:-splitkaro-dev-password}@db:3306/splitkaro
+      DATABASE_URL: postgresql://splitkaro:${POSTGRES_PASSWORD:-splitkaro-dev-password}@db:5432/splitkaro
       SECRET_KEY: ${SECRET_KEY:-dev-only-secret-change-me-in-production}
       CORS_ORIGINS: http://localhost:8080
     ports:
       - "8000:8000" # your computer's port : the container's port
     depends_on:
       db:
-        condition: service_healthy # wait until MySQL is ready, not just started
+        condition: service_healthy # wait until the database is ready, not just started
     restart: on-failure
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
@@ -55,4 +53,4 @@ services:
       - api
 
 volumes:
-  db-data:
+  pg-data:

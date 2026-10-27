@@ -23,4 +23,5 @@ USER appuser
 EXPOSE 8000
 
 # 0.0.0.0 = accept connections from outside the container (127.0.0.1 would only allow the container itself).
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Hosting platforms like Render tell the app which port to use through $PORT; locally it's 8000.
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

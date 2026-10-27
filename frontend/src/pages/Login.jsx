@@ -52,6 +52,12 @@ export default function Login() {
         <Button type="submit" disabled={submitting} className="w-full">
           {submitting ? "Logging in…" : "Log in"}
         </Button>
+        {import.meta.env.PROD && (
+          // The free hosting plan puts the server to sleep when nobody is using it.
+          <p className="text-center text-xs text-slate-500">
+            Demo on a free server: the first request can take up to a minute while it wakes up.
+          </p>
+        )}
       </form>
     </AuthCard>
   );

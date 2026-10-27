@@ -1,0 +1,33 @@
+# Render "Blueprint": describes both services so Render can create them from this repo.
+# Docs: https://render.com/docs/blueprint-spec
+services:
+  # FastAPI backend, built from the Dockerfile in the repo root.
+  - type: web
+    name: splitkaro-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL # the Neon connection string; Render asks for it when creating the service
+        sync: false
+      - key: CORS_ORIGINS # the frontend's URL, e.g. https://splitkaro-web.onrender.com
+        sync: false
+      - key: SECRET_KEY # Render generates a long random value once
+        generateValue: true
+
+  # React frontend, built once and served as static files.
+  - type: web
+    name: splitkaro-web
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    routes:
+      # Let React Router handle URLs like /groups/1 (same job as nginx.conf in Docker).
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL # the backend's URL, e.g. https://splitkaro-api.onrender.com
+        sync: false
