@@ -2,7 +2,7 @@
 
 ![CI](https://github.com/sammihere2001/splitkaro/actions/workflows/ci.yml/badge.svg)
 
-A REST API for splitting shared expenses between flatmates, hostel friends or trip groups.
+A full-stack app (React frontend + FastAPI backend) for splitting shared expenses between flatmates, hostel friends or trip groups.
 Log who paid for what, and SplitKaro works out a **short list of payments** that settles everyone up.
 
 > 🎥 **Demo video:** _add your Loom link here_
@@ -21,6 +21,7 @@ Log who paid for what, and SplitKaro works out a **short list of payments** that
 
 | Layer | Tech |
 |---|---|
+| Frontend | React 19, React Router, Vite, Tailwind CSS |
 | API | Python 3.13, FastAPI, Pydantic |
 | Database | SQLAlchemy 2.0 ORM, MySQL (SQLite for local dev and tests) |
 | Auth | OAuth2 password flow, JWT (PyJWT), bcrypt |
@@ -65,6 +66,16 @@ uvicorn app.main:app --reload
 
 Open http://localhost:8000/docs.
 
+Then start the frontend in a second terminal (needs Node.js 20+):
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open http://localhost:5173.
+
 To use MySQL instead of SQLite, create a `splitkaro` database and set `DATABASE_URL` in `.env`
 (see `.env.example`).
 
@@ -89,12 +100,17 @@ app/
   routers/             # auth, groups, expenses endpoints
   services/settlement.py   # split, balance and settle-up logic
 tests/                 # pytest suite
+frontend/
+  src/api.js           # fetch wrapper for the API
+  src/auth.jsx         # login state shared with every page
+  src/pages/           # Login, Register, Groups, GroupDetail
+  src/components/      # forms and reusable UI pieces
 .github/workflows/     # CI pipeline
 ```
 
 ## Roadmap
 
-- [ ] React frontend
+- [x] React frontend
 - [ ] Docker + docker-compose (API + MySQL)
 - [ ] Deploy to the cloud
 - [ ] Database migrations with Alembic
