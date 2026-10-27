@@ -5,7 +5,7 @@
 A full-stack app (React frontend + FastAPI backend) for splitting shared expenses between flatmates, hostel friends or trip groups.
 Log who paid for what, and SplitKaro works out a **short list of payments** that settles everyone up.
 
-> 🎥 **Demo video:** _add your Loom link here_
+<!-- Demo video: add the Loom link here once it's recorded. -->
 
 ## Features
 
@@ -15,7 +15,7 @@ Log who paid for what, and SplitKaro works out a **short list of payments** that
 - **Balances**: who owes and who is owed, per group
 - **Settle up**: a greedy algorithm that settles a group of *n* people in at most *n − 1* payments
 - **Money handled in paisa (integers)** to avoid floating-point rounding errors
-- **Automated tests** (pytest) running on every push via **GitHub Actions**
+- **31 automated tests** (pytest) running on every push via **GitHub Actions**
 - **Dockerized**: the whole stack (PostgreSQL + API + frontend) starts with one command, and CI
   builds the images and smoke-tests the running stack on every push
 
@@ -25,10 +25,31 @@ Log who paid for what, and SplitKaro works out a **short list of payments** that
 |---|---|
 | Frontend | React 19, React Router, Vite, Tailwind CSS |
 | API | Python 3.13, FastAPI, Pydantic |
-| Database | SQLAlchemy 2.0 ORM: PostgreSQL in production and Docker, MySQL also supported, SQLite for tests |
+| Database | SQLAlchemy 2.0 ORM: PostgreSQL (Docker), MySQL also supported, SQLite for tests |
 | Auth | OAuth2 password flow, JWT (PyJWT), bcrypt |
 | Testing / CI | pytest, FastAPI TestClient, GitHub Actions |
-| DevOps | Docker (multi-stage builds), Docker Compose, nginx, Render (Blueprint), Neon |
+| DevOps | Docker (multi-stage builds), Docker Compose, nginx |
+
+## How settle-up works
+
+Every expense changes each member's **balance**: the payer goes up by the full amount, and everyone
+who shared it goes down by their share. The balances always add up to zero.
+
+Settle-up turns those balances into payments:
+
+1. Split people into **debtors** (balance below 0) and **creditors** (balance above 0). People at
+   exactly 0 are already settled and are left out.
+2. Take the first debtor and the first creditor. The debtor pays the creditor the **smaller** of
+   what one owes and the other is owed.
+3. At least one of the two is now at 0, so remove them. Repeat until nobody is left.
+
+**Example:** Ali paid Rs 3,000 rent for three people, and Sara paid Rs 600 for groceries for herself
+and Hamza. Balances: Ali +2,000, Sara −700, Hamza −1,300. Settle-up gives two payments:
+Sara pays Ali 700, and Hamza pays Ali 1,300.
+
+Because every payment fully settles at least one person, a group with *n* people who aren't
+settled needs at most *n − 1* payments. The tests check every rule: everyone ends at 0, every amount
+is positive, nobody pays themselves, and there are never more than *n − 1* payments.
 
 ## API endpoints
 
@@ -48,12 +69,6 @@ Log who paid for what, and SplitKaro works out a **short list of payments** that
 | GET | `/groups/{id}/settle-up` | Payments that settle the group |
 
 Interactive docs (Swagger UI) are available at `http://localhost:8000/docs` when running locally.
-
-## How settle-up works
-
-_Write-up coming soon._
-
-<!-- TODO: explain your algorithm here in your own words: the idea, an example, and its time complexity. -->
 
 ## Run with Docker (easiest)
 
@@ -100,16 +115,6 @@ Open http://localhost:5173.
 To use MySQL or PostgreSQL instead of SQLite, create a `splitkaro` database and set `DATABASE_URL`
 in `.env` (see `.env.example`).
 
-## Deployment
-
-The live demo runs on free tiers:
-
-- **Render** runs the API (from the `Dockerfile`) and serves the built frontend. Both services
-  are described in [`render.yaml`](render.yaml) (a Render Blueprint).
-- **Neon** hosts the PostgreSQL database.
-
-Free Render services sleep when idle, so the first request after a while can take up to a minute.
-
 ## Run tests
 
 ```bash
@@ -140,14 +145,15 @@ frontend/
 .github/workflows/     # CI pipeline: tests + Docker smoke test
 Dockerfile             # backend image
 compose.yaml           # PostgreSQL + API + frontend together
-render.yaml            # deployment config for Render
+render.yaml            # deployment config for Render (prepared, not live yet)
 ```
 
 ## Roadmap
 
 - [x] React frontend
-- [x] Docker + Docker Compose (MySQL + API + frontend)
-- [x] Deploy to the cloud (Render + Neon)
+- [x] Docker + Docker Compose (PostgreSQL + API + frontend)
+- [ ] Live deployment (config for Render + Neon is ready in `render.yaml`)
+- [ ] End-to-end tests with Playwright
 - [ ] Database migrations with Alembic
 - [ ] Unequal splits (by amount or percentage)
 
