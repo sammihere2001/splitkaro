@@ -16,6 +16,8 @@ Log who paid for what, and SplitKaro works out a **short list of payments** that
 - **Settle up**: a greedy algorithm that settles a group of *n* people in at most *n − 1* payments
 - **Money handled in paisa (integers)** to avoid floating-point rounding errors
 - **Automated tests** (pytest) running on every push via **GitHub Actions**
+- **Dockerized**: the whole stack (MySQL + API + frontend) starts with one command, and CI
+  builds the images and smoke-tests the running stack on every push
 
 ## Tech stack
 
@@ -26,6 +28,7 @@ Log who paid for what, and SplitKaro works out a **short list of payments** that
 | Database | SQLAlchemy 2.0 ORM, MySQL (SQLite for local dev and tests) |
 | Auth | OAuth2 password flow, JWT (PyJWT), bcrypt |
 | Testing / CI | pytest, FastAPI TestClient, GitHub Actions |
+| DevOps | Docker (multi-stage builds), Docker Compose, nginx |
 
 ## API endpoints
 
@@ -52,7 +55,22 @@ _Write-up coming soon._
 
 <!-- TODO: explain your algorithm here in your own words: the idea, an example, and its time complexity. -->
 
-## Run locally
+## Run with Docker (easiest)
+
+Needs [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+
+```bash
+git clone https://github.com/sammihere2001/splitkaro.git
+cd splitkaro
+docker compose up --build
+```
+
+- App: http://localhost:8080
+- API docs: http://localhost:8000/docs
+
+Stop with `Ctrl+C`. `docker compose down -v` also deletes the database.
+
+## Run locally without Docker
 
 ```bash
 git clone https://github.com/sammihere2001/splitkaro.git
@@ -108,13 +126,16 @@ frontend/
   src/auth.jsx         # login state shared with every page
   src/pages/           # Login, Register, Groups, GroupDetail
   src/components/      # forms and reusable UI pieces
-.github/workflows/     # CI pipeline
+  Dockerfile           # builds the app, then serves it with nginx
+.github/workflows/     # CI pipeline: tests + Docker smoke test
+Dockerfile             # backend image
+compose.yaml           # MySQL + API + frontend together
 ```
 
 ## Roadmap
 
 - [x] React frontend
-- [ ] Docker + docker-compose (API + MySQL)
+- [x] Docker + Docker Compose (MySQL + API + frontend)
 - [ ] Deploy to the cloud
 - [ ] Database migrations with Alembic
 - [ ] Unequal splits (by amount or percentage)

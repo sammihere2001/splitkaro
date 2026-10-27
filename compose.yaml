@@ -1,0 +1,58 @@
+# Runs the whole app with one command:  docker compose up --build
+#   Frontend: http://localhost:8080
+#   API docs: http://localhost:8000/docs
+#
+# The passwords below are development defaults. Override them in a .env file for anything real.
+
+services:
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: splitkaro
+      MYSQL_USER: splitkaro
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-splitkaro-dev-password}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root-dev-password}
+    volumes:
+      # Keeps the data when containers are recreated. `docker compose down -v` deletes it.
+      - db-data:/var/lib/mysql
+    # No "ports:" on purpose: only the api container needs to reach MySQL, and this way it
+    # doesn't clash with a MySQL already installed on your computer (port 3306).
+    healthcheck:
+      # 127.0.0.1 forces a network connection, which only works once MySQL has fully started.
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  api:
+    build: .
+    environment:
+      # "db" is the service name above: containers find each other by name.
+      DATABASE_URL: mysql+pymysql://splitkaro:${MYSQL_PASSWORD:-splitkaro-dev-password}@db:3306/splitkaro
+      SECRET_KEY: ${SECRET_KEY:-dev-only-secret-change-me-in-production}
+      CORS_ORIGINS: http://localhost:8080
+    ports:
+      - "8000:8000" # your computer's port : the container's port
+    depends_on:
+      db:
+        condition: service_healthy # wait until MySQL is ready, not just started
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        # The browser calls the API directly, so this is the address as seen from your computer.
+        VITE_API_URL: http://localhost:8000
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+
+volumes:
+  db-data:
