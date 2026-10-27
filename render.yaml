@@ -6,6 +6,7 @@ services:
     name: splitkaro-api
     runtime: docker
     plan: free
+    region: singapore # closest Render region to Pakistan; create the Neon database in Singapore too
     dockerfilePath: ./Dockerfile
     healthCheckPath: /health
     envVars:
